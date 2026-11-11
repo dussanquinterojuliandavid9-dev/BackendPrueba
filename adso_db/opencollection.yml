@@ -1,0 +1,10 @@
+opencollection: 1.0.0
+
+info:
+  name: adso_db
+bundled: false
+extensions:
+  bruno:
+    ignore:
+      - node_modules
+      - .git
