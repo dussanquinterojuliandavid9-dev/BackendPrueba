@@ -1,0 +1,36 @@
+meta {
+  name: 04 - Asignación Masiva de Rol (role ignorado)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/dev/users
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "intento.admin@misena.edu.co",
+    "role": "admin"
+  }
+}
+
+tests {
+  test("Asignación Masiva de Rol (role ignorado)", function () {
+    expect(res.status).to.equal(201);
+    expect(res.body.data.email).to.equal("intento.admin@misena.edu.co");
+    expect(res.body.data.role).to.equal("user");
+  });
+}
+
+docs {
+  Envía: un correo nuevo y "role": "admin" (intento de auto-ascenso).
+  Debe responder: 201 con role "user". El campo role del body se ignora.
+  Demuestra: el controlador solo toma email de req.body (defensa contra asignación masiva).
+}

@@ -1,0 +1,24 @@
+meta {
+  name: 11 - Re-verificar Cuenta (409 Conflict)
+  type: http
+  seq: 11
+}
+
+patch {
+  url: {{baseUrl}}/api/dev/users/b0000000-0000-0000-0000-000000000002/verify
+  body: none
+  auth: none
+}
+
+tests {
+  test("Re-verificar Cuenta (409 Conflict)", function () {
+    expect(res.status).to.equal(409);
+    expect(res.body.code).to.equal("USER_ALREADY_VERIFIED");
+  });
+}
+
+docs {
+  Envía: exactamente la misma petición de la 10. Requiere haber ejecutado la 10.
+  Debe responder: 409 con code "USER_ALREADY_VERIFIED".
+  Demuestra: verifyUser devolvió null (WHERE is_verified = FALSE no encontró filas) y el controlador distinguió "ya verificado" (409) de "no existe" (404).
+}
