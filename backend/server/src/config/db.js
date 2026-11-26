@@ -96,3 +96,15 @@ export async function disconnectDatabases() {
 }
 
 export { mongoose };
+
+
+
+// Defensa contra inyección NoSQL (Sesión 10), segunda capa tras validar en el controlador:
+// - sanitizeFilter: si un filtro trae un objeto con operadores ($ne, $gt...) donde se
+//   esperaba un valor, Mongoose lo envuelve en $eq: deja de ser operador y, como no es
+//   texto, la consulta falla con CastError (400) en lugar de devolver datos ajenos.
+// - strictQuery: los filtros por campos que no existen en el esquema se descartan.
+mongoose.set('sanitizeFilter', true);
+mongoose.set('strictQuery', true);
+
+// 1. Singleton pg.Pool (PostgreSQL): …el resto del archivo no cambia

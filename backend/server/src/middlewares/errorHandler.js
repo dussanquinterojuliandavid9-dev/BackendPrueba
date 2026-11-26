@@ -1,11 +1,3 @@
-/**
- * =============================================================================
- * SENA CADPH Garzón · Regional Huila
- * Manejo Centralizado de Errores con Formato Estándar de Respuesta
- * Archivo: server/src/middlewares/errorHandler.js
- * =============================================================================
- */
-
 import { STATUS_CODES } from 'node:http';
 
 /**
@@ -47,6 +39,35 @@ export function notFoundHandler(req, res) {
   );
 }
 
+// Traduce los errores de Mongoose (Sesión 10) a errores de la aplicación
+function fromMongooseError(err) {
+  // Falló una regla del esquema (required, minlength, enum, match...)
+  if (err.name === 'ValidationError' && err.errors) {
+    const fieldErrors = Object.fromEntries(
+      Object.entries(err.errors).map(([field, detail]) => [
+        field,
+        // Los errores de tipo traen un mensaje técnico en inglés: se reemplaza por uno claro
+        detail.name === 'CastError' ? 'El valor no tiene el tipo esperado.' : detail.message
+      ])
+    );
+    return new AppError(400, 'VALIDATION_ERROR', 'Los datos enviados no son válidos.', fieldErrors);
+  }
+  // Un valor no se pudo convertir al tipo del esquema (ej. "abc" en un campo Number)
+  if (err.name === 'CastError') {
+    return new AppError(400, 'INVALID_VALUE', 'Los datos enviados no son válidos.', {
+      [err.path]: 'El valor no tiene el tipo esperado.'
+    });
+  }
+  // Índice único violado (ej. dos servicios con el mismo code)
+  if (err.code === 11000) {
+    const fieldErrors = Object.fromEntries(
+      Object.keys(err.keyValue ?? {}).map((field) => [field, 'Ya existe un registro con este valor.'])
+    );
+    return new AppError(409, 'DUPLICATE_KEY', 'Ya existe un registro con ese valor único.', fieldErrors);
+  }
+  return null;
+}
+
 // Manejador global: Express lo reconoce porque recibe 4 parámetros (err, req, res, next)
 export function errorHandler(err, req, res, next) {
   if (res.headersSent) return next(err);
@@ -65,10 +86,11 @@ export function errorHandler(err, req, res, next) {
     );
   }
 
-  // Errores controlados lanzados por nuestra propia lógica
-  if (err instanceof AppError) {
-    return res.status(err.statusCode).json(
-      buildErrorPayload(req, err.statusCode, err.code, err.message, err.fieldErrors)
+  // Errores controlados: los nuestros y los de Mongoose ya traducidos
+  const appError = err instanceof AppError ? err : fromMongooseError(err);
+  if (appError) {
+    return res.status(appError.statusCode).json(
+      buildErrorPayload(req, appError.statusCode, appError.code, appError.message, appError.fieldErrors)
     );
   }
 
@@ -77,4 +99,4 @@ export function errorHandler(err, req, res, next) {
   return res.status(500).json(
     buildErrorPayload(req, 500, 'INTERNAL_ERROR', 'Ocurrió un error inesperado. Intente nuevamente.')
   );
-}
+} 
