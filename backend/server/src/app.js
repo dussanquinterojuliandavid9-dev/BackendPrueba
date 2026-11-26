@@ -1,17 +1,11 @@
-/**
- * =============================================================================
- * SENA CADPH Garzón · Regional Huila
- * Configuración de la Aplicación Express (Pipeline de Middlewares)
- * Archivo: server/src/app.js  ·  Versión al cierre de la Sesión 09
- * =============================================================================
- */
-
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import { config } from './config/environment.js';
 import healthRoutes from './routes/healthRoutes.js';
+import contentRoutes from './routes/contentRoutes.js';
 import devUserRoutes from './routes/devUserRoutes.js';
+import devContentRoutes from './routes/devContentRoutes.js';
 import { notFoundHandler, errorHandler } from './middlewares/errorHandler.js';
 
 const app = express();
@@ -31,11 +25,13 @@ app.use(morgan(config.isProduction ? 'combined' : 'dev'));
 
 // 2. Montaje de Enrutadores Modulares
 app.use('/api/health', healthRoutes);
+app.use('/api/content', contentRoutes); // Público: alimenta la Landing Page
 
-// Rutas de laboratorio de la Sesión 09: todavía NO tienen autenticación
+// Rutas de laboratorio (Sesiones 09 y 10): todavía NO tienen autenticación
 // (llega en la Semana 3), por eso jamás se montan en producción.
 if (!config.isProduction) {
   app.use('/api/dev/users', devUserRoutes);
+  app.use('/api/dev/content', devContentRoutes);
 }
 
 // Ruta raíz informativa
